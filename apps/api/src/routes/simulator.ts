@@ -10,7 +10,7 @@ import { inMemoryStore } from '../services/inMemoryStore.js';
 export const simulatorRouter = Router();
 
 async function resetCampusState() {
-  if (mongoose.connection.readyState >= 1) {
+  if (mongoose.connection.readyState === 1) {
     await IncidentModel.deleteMany({});
     await ResourceModel.deleteMany({});
     await updateBlockedRoutes([]);
@@ -99,7 +99,7 @@ simulatorRouter.post('/scenarios', async (req: Request, res: Response) => {
     }
 
     let createdIncidents: any[] = [];
-    if (mongoose.connection.readyState >= 1) {
+    if (mongoose.connection.readyState === 1) {
       await ResourceModel.insertMany(resourcesToInsert);
       createdIncidents = await IncidentModel.insertMany(incidentsToInsert);
     } else {
@@ -145,7 +145,7 @@ simulatorRouter.post('/chaos', async (req: Request, res: Response) => {
         source: 'simulator' as const
       };
 
-      if (mongoose.connection.readyState >= 1) {
+      if (mongoose.connection.readyState === 1) {
         const inc = await IncidentModel.create(incData);
         injected.push(inc);
       } else {

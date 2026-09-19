@@ -36,7 +36,7 @@ incidentRouter.post('/', async (req: Request, res: Response) => {
     });
 
     let incident: any;
-    if (mongoose.connection.readyState >= 1) {
+    if (mongoose.connection.readyState === 1) {
       incident = await IncidentModel.create({
         ...parsed,
         priorityScore,

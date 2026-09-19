@@ -21,7 +21,7 @@ export function formatMongoUri(rawUri: string): string {
 }
 
 export async function connectDB(uri?: string) {
-  if (mongoose.connection.readyState >= 1) {
+  if (mongoose.connection.readyState === 1) {
     return;
   }
 
