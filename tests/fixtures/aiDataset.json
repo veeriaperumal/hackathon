@@ -1,0 +1,24 @@
+[
+  {
+    "scenario": "single_medical_one_ambulance",
+    "incidents": [{ "id": "INC-1", "type": "medical", "severity": 8, "urgency": 9, "impact": 7, "requiredResourceTypes": ["ambulance"], "location": { "zone": "North_Zone", "latitude": 12.971, "longitude": 77.594 } }],
+    "resources": [{ "id": "RES-1", "name": "AMB-01", "type": "ambulance", "status": "available", "capabilities": ["ambulance"], "location": { "zone": "North_Zone", "latitude": 12.971, "longitude": 77.594 } }],
+    "expected": { "allocated": 1, "unallocated": 0, "fallbackSuccess": true }
+  },
+  {
+    "scenario": "two_incidents_one_ambulance_resource_exhaustion",
+    "incidents": [
+      { "id": "INC-1", "type": "medical", "severity": 9, "urgency": 10, "impact": 8, "requiredResourceTypes": ["ambulance"], "location": { "zone": "North_Zone", "latitude": 12.971, "longitude": 77.594 } },
+      { "id": "INC-2", "type": "medical", "severity": 6, "urgency": 6, "impact": 5, "requiredResourceTypes": ["ambulance"], "location": { "zone": "South_Zone", "latitude": 12.975, "longitude": 77.598 } }
+    ],
+    "resources": [{ "id": "RES-1", "name": "AMB-01", "type": "ambulance", "status": "available", "capabilities": ["ambulance"], "location": { "zone": "North_Zone", "latitude": 12.971, "longitude": 77.594 } }],
+    "expected": { "allocated": 1, "unallocated": 1, "highestPriorityTargeted": "INC-1" }
+  },
+  {
+    "scenario": "blocked_route_detour_check",
+    "incidents": [{ "id": "INC-1", "type": "medical", "severity": 8, "urgency": 8, "impact": 7, "requiredResourceTypes": ["ambulance"], "location": { "zone": "West_Zone", "latitude": 12.974, "longitude": 77.592 } }],
+    "resources": [{ "id": "RES-1", "name": "AMB-01", "type": "ambulance", "status": "available", "capabilities": ["ambulance"], "location": { "zone": "North_Zone", "latitude": 12.971, "longitude": 77.594 } }],
+    "routeConstraints": [{ "routeId": "R1", "fromZone": "North_Zone", "toZone": "West_Zone", "status": "blocked" }],
+    "expected": { "directDispatchBlocked": true }
+  }
+]
