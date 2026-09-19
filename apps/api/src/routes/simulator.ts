@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Router, Request, Response } from 'express';
 import { IncidentModel } from '../models/Incident.js';
 import { ResourceModel } from '../models/Resource.js';
@@ -15,6 +16,9 @@ async function resetCampusState() {
 
 simulatorRouter.post('/reset', async (req: Request, res: Response) => {
   try {
+    if (mongoose.connection.readyState === 0) {
+      return res.status(503).json({ error: 'Database connection unavailable. Please set MONGODB_URI in Vercel Project Settings.' });
+    }
     await resetCampusState();
     await incrementStateVersion();
     res.json({ message: 'Campus state reset to clean baseline.' });
@@ -25,6 +29,9 @@ simulatorRouter.post('/reset', async (req: Request, res: Response) => {
 
 simulatorRouter.post('/scenarios', async (req: Request, res: Response) => {
   try {
+    if (mongoose.connection.readyState === 0) {
+      return res.status(503).json({ error: 'Database connection unavailable. Please set MONGODB_URI in Vercel Project Settings.' });
+    }
     const { scenarioId } = req.body;
     await resetCampusState();
 
