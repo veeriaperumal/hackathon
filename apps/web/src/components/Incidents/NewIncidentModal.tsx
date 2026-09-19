@@ -82,7 +82,7 @@ export const NewIncidentModal: React.FC<NewIncidentModalProps> = ({ isOpen, onCl
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-dark-800 border border-dark-600 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
         <div className="p-4 border-b border-dark-700 bg-dark-900 flex justify-between items-center">
           <h2 className="font-bold text-sm text-gray-100 flex items-center gap-2 uppercase tracking-wide">
