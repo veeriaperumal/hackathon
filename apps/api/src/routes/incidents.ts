@@ -6,20 +6,23 @@ import { logAuditEvent } from '../services/auditLogger.js';
 import { incrementStateVersion } from '../services/stateManager.js';
 import { calculatePriorityScore } from '../rules/priorityEngine.js';
 import { triggerReplanning } from '../services/orchestrator.js';
+import { inMemoryStore } from '../services/inMemoryStore.js';
 
 export const incidentRouter = Router();
 
 incidentRouter.get('/', async (req: Request, res: Response) => {
   try {
     if (mongoose.connection.readyState === 0) {
-      return res.json({ incidents: [] });
+      const { status } = req.query;
+      const list = status ? inMemoryStore.incidents.filter(i => i.status === status) : inMemoryStore.incidents;
+      return res.json({ incidents: list });
     }
     const { status } = req.query;
     const filter = status ? { status } : {};
     const incidents = await IncidentModel.find(filter).sort({ createdAt: -1 });
     res.json({ incidents });
   } catch (error) {
-    res.json({ incidents: [] });
+    res.json({ incidents: inMemoryStore.incidents });
   }
 });
 
@@ -29,20 +32,32 @@ incidentRouter.post('/', async (req: Request, res: Response) => {
     const priorityScore = calculatePriorityScore({
       urgency: parsed.urgency,
       impact: parsed.impact,
-      dependencyRisk: 0 // Will be updated by spatial engine if near another incident
+      dependencyRisk: 0
     });
 
-    const incident = await IncidentModel.create({
-      ...parsed,
-      priorityScore,
-      status: 'open',
-      dependencies: []
-    });
+    let incident: any;
+    if (mongoose.connection.readyState >= 1) {
+      incident = await IncidentModel.create({
+        ...parsed,
+        priorityScore,
+        status: 'open',
+        dependencies: []
+      });
+    } else {
+      incident = {
+        ...parsed,
+        id: `inc_${Date.now()}`,
+        priorityScore,
+        status: 'open' as const,
+        dependencies: [],
+        createdAt: new Date().toISOString()
+      };
+      inMemoryStore.incidents.push(incident);
+    }
 
     const stateVersion = await incrementStateVersion();
-    await logAuditEvent('INCIDENT_CREATED', incident.id, null, incident.toObject(), 'operator');
+    await logAuditEvent('INCIDENT_CREATED', incident.id, null, incident, 'operator');
 
-    // Trigger orchestration replanning
     triggerReplanning('INCIDENT_CREATED', incident.id);
 
     res.status(201).json({ incident, stateVersion });
@@ -53,6 +68,11 @@ incidentRouter.post('/', async (req: Request, res: Response) => {
 
 incidentRouter.get('/:id', async (req: Request, res: Response) => {
   try {
+    if (mongoose.connection.readyState === 0) {
+      const incident = inMemoryStore.incidents.find(i => i.id === req.params.id);
+      if (!incident) return res.status(404).json({ error: 'Incident not found' });
+      return res.json({ incident });
+    }
     const incident = await IncidentModel.findById(req.params.id);
     if (!incident) {
       return res.status(404).json({ error: 'Incident not found' });
@@ -66,6 +86,15 @@ incidentRouter.get('/:id', async (req: Request, res: Response) => {
 incidentRouter.patch('/:id', async (req: Request, res: Response) => {
   try {
     const parsed = IncidentUpdateSchema.parse(req.body);
+    if (mongoose.connection.readyState === 0) {
+      const incident = inMemoryStore.incidents.find(i => i.id === req.params.id);
+      if (!incident) return res.status(404).json({ error: 'Incident not found' });
+      Object.assign(incident, parsed);
+      const stateVersion = await incrementStateVersion();
+      triggerReplanning('INCIDENT_UPDATED', incident.id);
+      return res.json({ incident, stateVersion });
+    }
+
     const incident = await IncidentModel.findById(req.params.id);
     if (!incident) {
       return res.status(404).json({ error: 'Incident not found' });
