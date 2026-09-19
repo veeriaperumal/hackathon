@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Router, Request, Response } from 'express';
 import { ResourceModel } from '../models/Resource.js';
 import { ResourceUpdateSchema } from '@campus-crisis/shared';
@@ -9,10 +10,13 @@ export const resourceRouter = Router();
 
 resourceRouter.get('/', async (req: Request, res: Response) => {
   try {
+    if (mongoose.connection.readyState === 0) {
+      return res.json({ resources: [] });
+    }
     const resources = await ResourceModel.find();
     res.json({ resources });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch resources' });
+    res.json({ resources: [] });
   }
 });
 

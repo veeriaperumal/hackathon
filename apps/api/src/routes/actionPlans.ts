@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Router, Request, Response } from 'express';
 import { ActionPlanModel } from '../models/ActionPlan.js';
 import { ResourceModel } from '../models/Resource.js';
@@ -12,31 +13,40 @@ export const actionPlanRouter = Router();
 
 actionPlanRouter.get('/', async (req: Request, res: Response) => {
   try {
+    if (mongoose.connection.readyState === 0) {
+      return res.json({ actionPlans: [] });
+    }
     const plans = await ActionPlanModel.find().sort({ createdAt: -1 }).limit(20);
     res.json({ actionPlans: plans });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch action plans' });
+    res.json({ actionPlans: [] });
   }
 });
 
 actionPlanRouter.get('/latest', async (req: Request, res: Response) => {
   try {
+    if (mongoose.connection.readyState === 0) {
+      return res.json({ actionPlan: null });
+    }
     const latestPlan = await ActionPlanModel.findOne({ status: { $in: ['pending_approval', 'approved'] } }).sort({ createdAt: -1 });
     res.json({ actionPlan: latestPlan });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch latest action plan' });
+    res.json({ actionPlan: null });
   }
 });
 
 actionPlanRouter.get('/:id', async (req: Request, res: Response) => {
   try {
+    if (mongoose.connection.readyState === 0) {
+      return res.status(404).json({ error: 'Action plan not found' });
+    }
     const plan = await ActionPlanModel.findOne({ planId: req.params.id });
     if (!plan) {
       return res.status(404).json({ error: 'Action plan not found' });
     }
     res.json({ actionPlan: plan });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch action plan' });
+    res.status(404).json({ error: 'Action plan not found' });
   }
 });
 
